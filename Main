@@ -1,0 +1,67 @@
+from docx import Document
+
+class WordDocumentParser:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.document = self._load_document()
+
+    def _load_document(self):
+        try:
+            return Document(self.file_path)
+        except Exception as e:
+            print(f"Error loading document: {e}")
+            return None
+
+    def get_metadata(self):
+        if not self.document:
+            return {}
+        metadata = self.document.core_properties
+        word_count = getattr(metadata, 'word_count', 'N/A')  # Default to 'N/A' if not found
+        return {
+            "Title": metadata.title,
+            "Author": metadata.author,
+            "Word Count": word_count
+        }
+
+    def extract_paragraphs(self):
+        if not self.document:
+            return []
+        return [para.text for para in self.document.paragraphs if para.text.strip()]
+
+    def extract_tables(self):
+        if not self.document:
+            return []
+        tables_data = []
+        for table in self.document.tables:
+            table_content = []
+            for row in table.rows:
+                row_data = [cell.text.strip() for cell in row.cells]
+                table_content.append(row_data)
+            tables_data.append(table_content)
+        return tables_data
+
+    def parse_document(self):
+        return {
+            "Metadata": self.get_metadata(),
+            "Paragraphs": self.extract_paragraphs(),
+            "Tables": self.extract_tables()
+        }
+
+    def display_content(self):
+        parsed_data = self.parse_document()
+        print("\n===== Document Metadata =====")
+        for key, value in parsed_data["Metadata"].items():
+            print(f"{key}: {value}")
+        print("\n===== Extracted Paragraphs =====")
+        for i, para in enumerate(parsed_data["Paragraphs"], start=1):
+            print(f"{i}. {para}")
+        print("\n===== Extracted Tables =====")
+        for table_index, table in enumerate(parsed_data["Tables"], start=1):
+            print(f"\nTable {table_index}:")
+            for row in table:
+                print(" | ".join(row))
+
+if __name__ == "__main__":
+    file_path = "sample.docx"  # Replace with your document path
+    parser = WordDocumentParser(file_path)
+    parser.display_content()
